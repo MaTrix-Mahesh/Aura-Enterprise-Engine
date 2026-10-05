@@ -1,0 +1,99 @@
+# ==============================================================================
+# Aura Enterprise Engine — Git Ignore Configuration
+# ==============================================================================
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!.env.example
+!**/.env.example
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
+credentials.json
+service-account.json
+serviceAccount.json
+serviceAccountKey.json
+secrets.json
+secrets/
+.secrets/
+credentials/
+id_rsa*
+id_ecdsa*
+id_ed25519*
+*.secret
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnp
+.pnp.js
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+build/
+out/
+coverage/
+.nyc_output/
+
+# OS/editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+*.swp
+*.swo
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+tmp/
+temp/
+
+# Local database/data files
+*.db
+*.sqlite
+*.sqlite3
+mongo_data/
+dump/
