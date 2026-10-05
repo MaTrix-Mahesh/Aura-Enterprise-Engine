@@ -47,9 +47,12 @@ export function buildQueryString(params = {}) {
 export async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('vaultpay_token') : null;
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
   const config = {
@@ -227,6 +230,98 @@ export const api = {
      */
     async getLocks() {
       return request('/tickets/locks');
+    },
+  },
+
+  /**
+   * VaultPay Financial Core — Authentication API methods
+   */
+  auth: {
+    /**
+     * Logs in user and returns JWT and profile
+     * @param {string} email
+     * @param {string} password
+     */
+    async login(email, password) {
+      return request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+    },
+
+    /**
+     * Fetches current authenticated profile
+     */
+    async me() {
+      return request('/auth/me');
+    },
+  },
+
+  /**
+   * VaultPay Financial Core — Admin API methods
+   */
+  admin: {
+    async getClients() {
+      return request('/admin/clients');
+    },
+    async createClient(data) {
+      return request('/admin/clients', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    async getStats() {
+      return request('/admin/stats');
+    },
+  },
+
+  /**
+   * VaultPay Financial Core — Invoices API methods
+   */
+  invoices: {
+    async list(params = {}) {
+      const qs = buildQueryString(params);
+      return request(`/invoices${qs}`);
+    },
+    async get(id) {
+      return request(`/invoices/${id}`);
+    },
+    async create(data) {
+      return request('/invoices', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    getPdfUrl(id) {
+      return `${API_BASE_URL}/invoices/${id}/pdf`;
+    },
+  },
+
+  /**
+   * VaultPay Financial Core — Client Specific API methods
+   */
+  client: {
+    async getInvoices(params = {}) {
+      const qs = buildQueryString(params);
+      return request(`/client/invoices${qs}`);
+    },
+    async getInvoice(id) {
+      return request(`/client/invoices/${id}`);
+    },
+    async getStats() {
+      return request('/client/stats');
+    },
+  },
+
+  /**
+   * VaultPay Financial Core — Payment API methods
+   */
+  payments: {
+    async createCheckoutSession(invoiceId) {
+      return request('/payments/create-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify({ invoiceId }),
+      });
     },
   },
 };

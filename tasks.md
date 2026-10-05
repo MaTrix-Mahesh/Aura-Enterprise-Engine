@@ -98,3 +98,88 @@
 ## PHASE 8 — Submission & Final Verification
 - [x] Complete Final Acceptance Checklist
 - [x] Produce Final Execution Report
+
+---
+
+## PHASE 9 — Sprint 20 Initial Inspection & Modular Domain Architecture
+- [x] Inspect existing Sprint 18 & 19 codebase without breaking existing domains
+- [x] Ensure zero-rewrite of Inventory, Socket.io, Analytics, and Ticket concurrency engines
+- [x] Design isolated `VaultPay Financial Core` domain architecture
+- [x] Add packages: `jsonwebtoken`, `bcryptjs`, `stripe`, `pdfkit`, `nodemailer`, `react-router-dom`, `@stripe/stripe-js`
+
+---
+
+## PHASE 10 — Database Models & Environment Configuration
+- [x] User Model with `ADMIN` and `CLIENT` enum roles, unique email, bcrypt password hash
+- [x] Invoice Model with sequential numbering, client reference, line items, amount, status enums
+- [x] Update `env.js`, `.env.example`, and `.env` with strict Zod validation (JWT, Stripe, SMTP, Client URL)
+- [x] Create seed data generator (`scripts/seedVaultPay.js`) for Admin, Client A, and Client B
+
+---
+
+## PHASE 11 — Authentication & Zero-Trust RBAC Middleware
+- [x] Implement `authenticateJWT` verifying Bearer tokens, rejecting expired/invalid/missing tokens (401)
+- [x] Implement `requireRole('ADMIN')` and `requireRole('CLIENT')` rejecting unauthorized roles (403)
+- [x] Build `POST /api/auth/login` returning sanitized user identity and signed JWT
+- [x] Build `GET /api/auth/me` providing verified session context
+
+---
+
+## PHASE 12 — Invoice Domain & IDOR Prevention Engine
+- [x] Admin invoice creation (`POST /api/invoices`) with server-computed authoritative amounts
+- [x] Admin invoice listing (`GET /api/invoices`) and KPI aggregations
+- [x] Client invoice listing (`GET /api/client/invoices`) strictly isolated to authenticated client's records
+- [x] IDOR protection on `GET /api/invoices/:id`: Client A requesting Client B invoice triggers HTTP 403 Forbidden
+
+---
+
+## PHASE 13 — Stripe Checkout & Raw Body Webhook Verification
+- [x] Stripe Checkout session creation with authoritative database amount in smallest currency unit
+- [x] Prevent payment double-submission and reject already-paid invoices
+- [x] IDOR check on payment initiation: Client A cannot initiate payment for Client B's invoice (403)
+- [x] Mount raw webhook endpoint (`POST /api/webhooks/stripe`) BEFORE express.json()
+- [x] Cryptographic signature verification via `stripe.webhooks.constructEvent()`
+- [x] Transition invoice to `PAID` exclusively upon verified webhook event
+- [x] Implement event idempotency preventing duplicate receipt/processing on webhook retries
+
+---
+
+## PHASE 14 — PDFKit Receipt Generation & Nodemailer Delivery
+- [x] Generate professional PDF receipt with Nexus Corporate Services header, line items, and green PAID stamp
+- [x] Local storage in `backend/receipts` (gitignored)
+- [x] Secure PDF download endpoint (`GET /api/invoices/:id/receipt`) with strict ownership authorization
+- [x] Resilient Nodemailer email transporter attaching PDF receipt upon confirmed payment
+
+---
+
+## PHASE 15 — Frontend Financial UI & Route Guards
+- [x] React Router setup with `<BrowserRouter>` and `<AuthProvider>`
+- [x] Protected routes with explicit 403 Unauthorized page (`UnauthorizedPage.jsx`) on role mismatch
+- [x] Login page with credentials form and one-click demo persona quick-logins
+- [x] Admin Revenue Console (`/admin/dashboard`) with financial KPIs, invoice table, create invoice modal
+- [x] Client Billing Portal (`/client/dashboard`) showing isolated invoices and pay actions
+- [x] Invoice Detail page (`/invoices/:id`) with line items, bold PAID indicator, and PDF download
+- [x] Pay button double-click protection with immediate disable and loading spinner
+
+---
+
+## PHASE 16 — Security Attack Testing & Acceptance Suite
+- [x] Attack 1: Client token accessing Admin API -> HTTP 403 Forbidden
+- [x] Attack 2: Client token creating Invoice -> HTTP 403 Forbidden
+- [x] Attack 3: Client A token accessing Client B invoice -> HTTP 403 Forbidden
+- [x] Attack 4: Client A token initiating payment for Client B invoice -> HTTP 403 Forbidden
+- [x] Attack 5: Tampered Stripe webhook signature -> HTTP 400 Bad Request
+- [x] Client A accessing own invoice -> HTTP 200 OK
+- [x] Webhook idempotency and DB state transitions verified
+- [x] PDF generation and IDOR-safe download verified
+
+---
+
+## PHASE 17 — Full Regression & Quality Gates
+- [x] Sprint 18 regression test (`scripts/testEndpoints.js`): 100% PASS
+- [x] Sprint 19 Socket.io regression test (`backend/test-socket.js`): 100% PASS
+- [x] Sprint 19 dual-agent concurrency test (`backend/test-dual-concurrency.js`): 100% PASS
+- [x] Sprint 20 security test (`scripts/testSprint20.js`): 100% PASS
+- [x] Frontend production build (`npm run build`): 100% PASS
+- [x] Secrets audit: No tracked secrets, gitignore updated
+

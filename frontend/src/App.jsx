@@ -1,200 +1,184 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
-import SectionHeader from './components/common/SectionHeader';
-import MetricGrid from './components/metrics/MetricGrid';
-import StockRiskChart from './components/analytics/StockRiskChart';
-import CategoryValuationChart from './components/analytics/CategoryValuationChart';
-import InventoryPreview from './components/inventory/InventoryPreview';
-import AddProductModal from './components/inventory/AddProductModal';
-import EditProductModal from './components/inventory/EditProductModal';
+import LoginPage from './pages/LoginPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ClientDashboard from './pages/ClientDashboard';
+import InvoiceDetailPage from './pages/InvoiceDetailPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import InventoryWorkspace from './components/inventory/InventoryWorkspace';
 import TicketBoard from './components/tickets/TicketBoard';
-import { api } from './services/api';
 import { getStoredAgent } from './services/socket';
-import { Download, Plus } from 'lucide-react';
 
 /**
- * App Component
- * Master composition root for Aura Enterprise Engine & RapidDispatch Live Ops (Sprint 19).
- * Preserves all existing Sprint 18 features and renders the polished RapidDispatch Live Ops workspace.
+ * Standard Layout Wrapper that provides consistent AppLayout, Topbar,
+ * and real-time Socket/Telemetry across the entire enterprise platform.
  */
-export default function App() {
-  const [activeNav, setActiveNav] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash.toLowerCase();
-      if (hash.includes('live-ops') || hash.includes('tickets')) return 'Live Ops Tickets';
-      if (hash.includes('inventory') || hash.includes('overview')) return 'Inventory';
-      const saved = localStorage.getItem('aura_active_nav');
-      if (saved) return saved;
-    }
-    return 'Inventory';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aura_active_nav', activeNav);
-    }
-  }, [activeNav]);
-
+function LayoutWrapper({ children, activeNav }) {
   const [activeAgent, setActiveAgent] = useState(getStoredAgent());
-
-  // Inventory & Analytics state (Sprint 18 preservation)
-  const [analytics, setAnalytics] = useState(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  // Modal states for Inventory
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-
-  // Fetch live aggregated analytics from MongoDB
-  const fetchAnalytics = useCallback(async () => {
-    setAnalyticsLoading(true);
-    try {
-      const res = await api.analytics.get();
-      if (res && res.success && res.data) {
-        setAnalytics(res.data);
-      }
-    } catch (err) {
-      console.warn('Analytics fetch error:', err);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics, refreshTrigger]);
-
-  // Handle CSV export download
-  const handleExport = () => {
-    const exportUrl = api.inventory.getExportUrl();
-    const link = document.createElement('a');
-    link.href = exportUrl;
-    link.setAttribute('download', `inventory_export_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleProductCreated = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  const handleProductUpdated = () => {
-    setRefreshTrigger((prev) => prev + 1);
-    setEditingProduct(null);
-  };
-
-  const totalSKUs = analytics?.totalSKUs || 50001;
-
-  const inventoryHeaderActions = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <button
-        type="button"
-        className="btn"
-        style={{
-          height: '44px',
-          padding: '0 18px',
-          borderRadius: '10px',
-          border: '1px solid #E2E8F0',
-          backgroundColor: '#FFFFFF',
-          color: '#334155',
-          fontSize: '14px',
-          fontWeight: 500,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          cursor: 'pointer',
-          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-          transition: 'all 0.15s ease',
-        }}
-        title="Export CSV Data"
-        onClick={handleExport}
-      >
-        <Download size={16} color="#64748B" />
-        <span>Export</span>
-      </button>
-      <button
-        type="button"
-        className="btn"
-        style={{
-          height: '44px',
-          padding: '0 20px',
-          borderRadius: '10px',
-          border: 'none',
-          backgroundColor: '#0D9488',
-          color: '#FFFFFF',
-          fontSize: '14px',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          cursor: 'pointer',
-          boxShadow: '0 2px 6px rgba(13, 148, 136, 0.25)',
-          transition: 'all 0.15s ease',
-        }}
-        title="Add New Product"
-        onClick={() => setIsAddModalOpen(true)}
-      >
-        <Plus size={17} strokeWidth={2.5} />
-        <span>Add Product</span>
-      </button>
-    </div>
-  );
 
   return (
     <AppLayout
-      totalSKUs={totalSKUs}
       activeNav={activeNav}
-      onSelectNav={(nav) => setActiveNav(nav === 'Overview' ? 'Inventory' : nav)}
       activeAgent={activeAgent}
       onAgentChange={setActiveAgent}
     >
-      {/* Conditional Workspace Rendering */}
-      {activeNav === 'Live Ops Tickets' ? (
-        /* RapidDispatch Live Ops: Concurrency & Ticketing Engine (Matches Reference Image) */
-        <TicketBoard
-          activeAgent={activeAgent}
-          onAgentChange={setActiveAgent}
-        />
-      ) : (
-        /* Sprint 18 & 19 Polished Inventory & Analytics Workspace */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          <SectionHeader
-            title="Inventory Overview"
-            subtitle="Inventory performance and operational stock health across your catalog."
-            actions={inventoryHeaderActions}
-          />
-
-          <MetricGrid analytics={analytics} loading={analyticsLoading} />
-
-          <section aria-label="Visual Analytics Section">
-            <div className="grid-analytics" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-              <StockRiskChart analytics={analytics} />
-              <CategoryValuationChart analytics={analytics} />
-            </div>
-          </section>
-
-          <InventoryPreview
-            refreshTrigger={refreshTrigger}
-            onEditProduct={(product) => setEditingProduct(product)}
-            onExport={handleExport}
-          />
-
-          <AddProductModal
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onSuccess={handleProductCreated}
-          />
-
-          <EditProductModal
-            isOpen={Boolean(editingProduct)}
-            product={editingProduct}
-            onClose={() => setEditingProduct(null)}
-            onSuccess={handleProductUpdated}
-          />
-        </div>
-      )}
+      {children}
     </AppLayout>
+  );
+}
+
+/**
+ * Dedicated LiveOps Page wrapper synchronizing activeAgent between
+ * the Topbar agent selector and the TicketBoard lock engine.
+ */
+function LiveOpsPage() {
+  const [activeAgent, setActiveAgent] = useState(getStoredAgent());
+
+  return (
+    <AppLayout
+      activeNav="Live Ops Tickets"
+      activeAgent={activeAgent}
+      onAgentChange={setActiveAgent}
+    >
+      <TicketBoard
+        activeAgent={activeAgent}
+        onAgentChange={setActiveAgent}
+      />
+    </AppLayout>
+  );
+}
+
+/**
+ * Smart Root Redirector:
+ * Routes users intelligently based on their authenticated role.
+ */
+function HomeRedirect() {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+          backgroundColor: '#F8FAFC',
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}
+      >
+        <div className="spinner" style={{ width: '40px', height: '40px', borderTopColor: '#0D9488' }} />
+        <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
+          Initializing VaultPay Financial Core...
+        </span>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    if (user?.role === 'ADMIN') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (user?.role === 'CLIENT') {
+      return <Navigate to="/client/dashboard" replace />;
+    }
+  }
+
+  return <Navigate to="/login" replace />;
+}
+
+/**
+ * Master Enterprise Application Composition Root
+ * Powers:
+ * 1. VaultPay Financial Core (Sprint 20)
+ * 2. RapidDispatch Live Ops (Sprint 19)
+ * 3. Inventory & Analytics (Sprint 18)
+ */
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public Auth Gateway */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Admin Financial Console (Strict RBAC: ADMIN only) */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <LayoutWrapper activeNav="VaultPay Revenue">
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              </LayoutWrapper>
+            }
+          />
+
+          {/* Client Corporate Billing Portal (Strict RBAC: CLIENT only) */}
+          <Route
+            path="/client/dashboard"
+            element={
+              <LayoutWrapper activeNav="Client Billing">
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <ClientDashboard />
+                </ProtectedRoute>
+              </LayoutWrapper>
+            }
+          />
+
+          {/* Invoice Statement Detail (Zero-Trust IDOR Protected) */}
+          <Route
+            path="/invoices/:id"
+            element={
+              <LayoutWrapper activeNav="Invoices">
+                <ProtectedRoute>
+                  <InvoiceDetailPage />
+                </ProtectedRoute>
+              </LayoutWrapper>
+            }
+          />
+
+          {/* RapidDispatch Live Ops Workspace (Preserved Sprint 19) */}
+          <Route path="/live-ops" element={<LiveOpsPage />} />
+
+          {/* Inventory Catalog & Stock Analytics (Preserved Sprint 18) */}
+          <Route
+            path="/inventory"
+            element={
+              <LayoutWrapper activeNav="Inventory">
+                <InventoryWorkspace />
+              </LayoutWrapper>
+            }
+          />
+
+          {/* Zero-Trust 403 Forbidden Experience */}
+          <Route
+            path="/403"
+            element={
+              <LayoutWrapper activeNav="Security">
+                <UnauthorizedPage />
+              </LayoutWrapper>
+            }
+          />
+          <Route
+            path="/unauthorized"
+            element={
+              <LayoutWrapper activeNav="Security">
+                <UnauthorizedPage />
+              </LayoutWrapper>
+            }
+          />
+
+          {/* Root & Fallback Redirects */}
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

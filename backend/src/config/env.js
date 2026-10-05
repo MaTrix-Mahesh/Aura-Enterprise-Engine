@@ -52,6 +52,56 @@ const envSchema = z.object({
       invalid_type_error: 'CORS_ORIGIN must be a string',
     })
     .default('http://localhost:5173'),
+
+  JWT_SECRET: z
+    .string({
+      invalid_type_error: 'JWT_SECRET must be a string',
+    })
+    .min(16, 'JWT_SECRET must be at least 16 characters')
+    .default('vaultpay_super_secret_jwt_key_sprint20_min32chars!'),
+
+  JWT_EXPIRES_IN: z
+    .string()
+    .default('7d'),
+
+  STRIPE_SECRET_KEY: z
+    .string()
+    .default('sk_test_placeholder_vaultpay_sprint20'),
+
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .default('whsec_placeholder_vaultpay_sprint20'),
+
+  STRIPE_PUBLISHABLE_KEY: z
+    .string()
+    .default('pk_test_placeholder_vaultpay_sprint20'),
+
+  CLIENT_URL: z
+    .string()
+    .default('http://localhost:5173'),
+
+  SMTP_HOST: z
+    .string()
+    .default('localhost'),
+
+  SMTP_PORT: z
+    .string()
+    .optional()
+    .default('587')
+    .transform((val) => parseInt(val, 10))
+    .pipe(z.number().int().min(1).max(65535)),
+
+  SMTP_USER: z
+    .string()
+    .default('vaultpay@nexus.com'),
+
+  SMTP_PASS: z
+    .string()
+    .default('mock_smtp_password'),
+
+  EMAIL_FROM: z
+    .string()
+    .default('Nexus Corporate Services <billing@nexus.com>'),
 });
 
 /**

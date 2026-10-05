@@ -325,4 +325,40 @@ Each log entry records:
   3. All APIs verified operational: `/api/health`, `/api/analytics`, `/api/inventory` pagination, streaming CSV export, product creation, and update.
 - **Final Decision:** ACCEPTED
 
+---
+
+### Entry: 2026-10-05 — TASK-SPRINT20-VAULTPAY-CORE
+
+- **Date:** 2026-10-05
+- **Task ID:** TASK-SPRINT20-VAULTPAY-CORE
+- **Problem / Context:** Implement the complete VaultPay Financial Core subsystem inside the existing Aura Enterprise Engine repository (preserving Sprint 18 Inventory & Analytics and Sprint 19 RapidDispatch Live Ops). Deliver authentication, RBAC, IDOR prevention, authoritative Stripe Checkout, raw-body cryptographic webhook signature verification, payment idempotency, PDFKit receipt generation, Nodemailer delivery, and React Router frontend with route guards and 403 Forbidden experience.
+- **AI Prompt:**
+  > "Sprint 20 — Final Client Delivery: VaultPay Financial Core complete implementation. Preserve Sprint 18 and Sprint 19 codebases intact. Build isolated VaultPay domain: User (ADMIN/CLIENT), Invoice (INV-YYYY-XXX, authoritative amount, status enums), JWT auth, strict RBAC, IDOR prevention on endpoints, Stripe Checkout session, raw request body Stripe webhook with stripe.webhooks.constructEvent signature verification, idempotency, PDF receipt via PDFKit with Nexus Corporate Services header & green PAID stamp, Nodemailer email delivery with PDF attachment, frontend React Router (/login, /admin/dashboard, /client/dashboard, /invoices/:id, /403), Pay button double-submission protection with immediate disable and spinner, automated security attack suite, zero tracked secrets."
+- **AI Output / Suggested Approach:**
+  - Architecture: Add modular backend domain components (`backend/src/models/User.js`, `Invoice.js`, `backend/src/middleware/auth.js`, `rbac.js`, controllers, routes, and services for Auth, Invoice, Stripe, PDF, Email).
+  - Stripe Webhook Raw Body Architecture: Mount `app.use('/api/webhooks', webhookRoutes)` with `express.raw({ type: 'application/json' })` strictly BEFORE `app.use(express.json())` to prevent stream consumption before signature verification.
+  - IDOR Prevention Engine: Ownership-aware queries (`Invoice.findOne({ _id, clientId })`) and strict role assertions in `invoiceService.js`. If a client attempts to view or pay another client's invoice, immediately throw HTTP 403 Forbidden.
+  - Payment Idempotency & Webhook Authoritative State: Invoices can ONLY transition to `PAID` via verified `checkout.session.completed` webhook. Duplicate webhook events are handled idempotently using `stripeSessionId` and `paidAt` guard clauses.
+  - PDF Generation & Nodemailer: In-memory stream buffer generation via `PDFKit` with Nexus Corporate Services branding and PAID stamp, stored securely in `backend/receipts` (gitignored), and attached to customer confirmation emails via Nodemailer transporter.
+  - Frontend React Router: Add `react-router-dom`, `AuthContext`, `ProtectedRoute` (unauthorized role renders `UnauthorizedPage` 403 rather than silent redirect), `PayInvoiceButton` with immediate click lock, Admin Revenue Console, Client Billing Portal, and Invoice Detail view.
+- **Engineering Decision:**
+  - Accepted and executed fully in a clean, non-destructive modular manner. Existing endpoints (`/api/inventory`, `/api/analytics`, `/api/tickets`, Socket.io) remained 100% operational.
+- **Verification:**
+  1. Mandatory Security Attack Suite (`scripts/testSprint20.js`):
+     - Attack 1: Client $\to$ `GET /api/admin/clients` returned `403 Forbidden`.
+     - Attack 2: Client $\to$ `POST /api/invoices` returned `403 Forbidden`.
+     - Attack 3: Client A $\to$ `GET /api/invoices/<Client B Invoice>` returned `403 Forbidden` (IDOR blocked).
+     - Attack 4: Client A $\to$ `POST /api/payments/create-checkout-session` for Client B invoice returned `403 Forbidden`.
+     - Attack 5: Submitting tampered Stripe webhook signature returned `400 Bad Request`.
+     - Legitimate Access: Client A $\to$ own invoice returned `200 OK`.
+     - Webhook Processing: Transitioned invoice to `PAID` with verified cryptographic signature.
+     - Webhook Idempotency: Duplicate webhook events handled safely without duplicate actions.
+     - PDF Download: Returned valid `%PDF` binary header; Client B blocked from Client A PDF (`403 Forbidden`).
+  2. Sprint 18 Regression (`scripts/testEndpoints.js`): 10pts / 100% PASSED.
+  3. Sprint 19 Regression (`backend/test-socket.js` & `backend/test-dual-concurrency.js`): 100% PASSED (Lock acquisition, collision rejection, ghost disconnect, real-time broadcasts).
+  4. Frontend Production Build: `vite build` completed in 14.5s with code 0.
+  5. Security Audit: `.env` untracked, `.gitignore` protects generated receipts and secrets, `.env.example` verified safe.
+- **Final Decision:** ACCEPTED
+
+
 

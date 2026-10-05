@@ -4,12 +4,13 @@ import { env } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { initSocketServer } from './socket/socketServer.js';
 import ticketService from './services/ticketService.js';
+import { seedVaultPayDemoData } from '../../scripts/seedVaultPay.js';
 
 let server;
 let io;
 
 /**
- * Bootstraps the Aura Enterprise Engine & RapidDispatch Live Ops server.
+ * Bootstraps the Aura Enterprise Engine & RapidDispatch Live Ops & VaultPay Financial Core server.
  * Enforces strict startup order: Config -> Database -> Seeds -> Socket.io & HTTP Listen.
  *
  * @returns {Promise<import('http').Server>}
@@ -20,8 +21,9 @@ export async function startServer() {
     console.log('[Bootstrap] Initializing MongoDB connection...');
     await connectDB();
 
-    // 2. Ensure initial tickets exist for live ops concurrency testing
+    // 2. Ensure initial tickets and VaultPay demo accounts exist
     await ticketService.seedInitialTicketsIfEmpty();
+    await seedVaultPayDemoData();
 
     // 3. Create unified Node HTTP server with Express app
     server = http.createServer(app);

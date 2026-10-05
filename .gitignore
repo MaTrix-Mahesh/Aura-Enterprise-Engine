@@ -97,3 +97,8 @@ temp/
 *.sqlite3
 mongo_data/
 dump/
+
+# Generated VaultPay PDFs & Receipts
+receipts/
+backend/receipts/
+*.pdf
